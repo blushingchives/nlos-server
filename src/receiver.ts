@@ -35,9 +35,8 @@ app.use(bodyParser.json());
 const init = async () => {
   poolClient = await CreateDatabaseClient(DATABASE_CONNECTION_STRING);
 
-  app.listen(80, async () => {
-    logger.info(`Listening on port 80`);
-    logger.info(`Server running on ${SERVER_URL}`);
+  app.listen(5000, async () => {
+    logger.info(`Listening on port 5000`);
     logger.info(`Server ready to receive`);
   });
 };
