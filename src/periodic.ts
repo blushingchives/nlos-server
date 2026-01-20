@@ -47,40 +47,6 @@ async function start() {
     return msToWait;
   }
 
-  async function sendUpdate() {
-    const sensorData: MotionDetection[] = (
-      await poolClient.query(
-        `
-    SELECT DISTINCT ON (sensor_id) *
-    FROM sensor_data
-    ORDER BY sensor_id, timestamp DESC;
-        `
-      )
-    ).rows;
-
-    let string = `NUS Laundry Occupancy System - NLOS\n`;
-    sensorData.forEach((data) => {
-      string += `${data.sensor_id}: ${
-        data.occupied_status ? "Occupied" : "Free\n"
-      }`;
-    });
-
-    await axios
-      .post(
-        `${TELEGRAM_API}/sendMessage`,
-        {
-          parse_mode: "markdown",
-          chat_id: TELEGRAM_GROUP_ID,
-          disable_web_page_preview: true,
-          text: string,
-        },
-        { httpsAgent: agent }
-      )
-      .catch((e) => logger.info(e));
-
-    logger.info(`Update sent at ${new Date().toLocaleTimeString()}`);
-  }
-
   // Wait until the next 15-minute mark, then loop
   while (true) {
     const waitTime = getMillisecondsUntilNext15Min();
@@ -93,4 +59,38 @@ async function start() {
     await new Promise((resolve) => setTimeout(resolve, waitTime));
     await sendUpdate();
   }
+}
+
+export async function sendUpdate() {
+  const sensorData: MotionDetection[] = (
+    await poolClient.query(
+      `
+    SELECT DISTINCT ON (sensor_id) *
+    FROM sensor_data
+    ORDER BY sensor_id, timestamp DESC;
+        `
+    )
+  ).rows;
+
+  let string = `NUS Laundry Occupancy System - NLOS\n`;
+  sensorData.forEach((data) => {
+    string += `${data.sensor_id}: ${
+      data.occupied_status ? "Occupied" : "Free\n"
+    }`;
+  });
+
+  await axios
+    .post(
+      `${TELEGRAM_API}/sendMessage`,
+      {
+        parse_mode: "markdown",
+        chat_id: TELEGRAM_GROUP_ID,
+        disable_web_page_preview: true,
+        text: string,
+      },
+      { httpsAgent: agent }
+    )
+    .catch((e) => logger.info(e));
+
+  logger.info(`Update sent at ${new Date().toLocaleTimeString()}`);
 }

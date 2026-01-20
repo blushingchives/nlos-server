@@ -4,6 +4,7 @@ import pino from "pino";
 import { CreateLoggerClient } from "./tools/CreateLoggerClient";
 import { CreateDatabaseClient } from "./tools/CreateDatabaseClient";
 import { MotionDetection, SensorData } from "./types/database";
+import { sendUpdate } from "./periodic";
 const agent = new https.Agent({ family: 4 }); // forces IPv4
 
 require("dotenv").config();
@@ -94,25 +95,10 @@ async function initiate() {
         logger.info("Sensor ID:", payload.sensor_id);
         logger.info("Occupied Status:", payload.occupied_status);
         logger.info("Timestamp:", payload.timestamp);
+        logger.info("Sending update...");
         logger.info("==============================");
 
-        let string = `NUS Laundry Occupancy System - NLOS\n`;
-        string += `${payload.sensor_id}: ${
-          payload.occupied_status ? "Occupied" : "Free"
-        }\n`;
-
-        await axios
-          .post(
-            `${TELEGRAM_API}/sendMessage`,
-            {
-              parse_mode: "markdown",
-              chat_id: TELEGRAM_GROUP_ID,
-              disable_web_page_preview: true,
-              text: string,
-            },
-            { httpsAgent: agent }
-          )
-          .catch((e) => logger.info(e));
+        sendUpdate();
       } catch (error) {
         console.error("Error parsing notification payload:", error);
       }
