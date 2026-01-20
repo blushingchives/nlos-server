@@ -66,7 +66,7 @@ export async function sendUpdate() {
     await poolClient.query(
       `
     SELECT DISTINCT ON (sensor_id) *
-    FROM sensor_data
+    FROM motion_detection
     ORDER BY sensor_id, timestamp DESC;
         `
     )
