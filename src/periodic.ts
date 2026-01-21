@@ -60,7 +60,6 @@ async function start() {
     await sendUpdate();
   }
 }
-
 export async function sendUpdate() {
   const motionData: MotionDetection[] = (
     await poolClient.query(
@@ -76,7 +75,7 @@ export async function sendUpdate() {
     return;
   }
 
-  let string = ``;
+  let string = `===  NLOS  ===\n`;
   motionData.forEach((data) => {
     string += `${data.sensor_id}: ${
       data.occupied_status ? "Occupied" : "Free\n"

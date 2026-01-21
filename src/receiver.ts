@@ -48,9 +48,6 @@ type MotionHistory = {
   [key: string]: {
     queue: Queue<any>;
     occupied: boolean;
-    baseline_ax?: number;
-    baseline_ay?: number;
-    baseline_az?: number;
   };
 };
 const motionHistory: MotionHistory = {};
@@ -66,136 +63,122 @@ app.post("/submit", async (req, res) => {
     delta_acx: number;
     delta_acy: number;
     delta_acz: number;
-    delta_gcx: number;
-    delta_gcy: number;
-    delta_gcz: number;
+    delta_gyx: number;
+    delta_gyy: number;
+    delta_gyz: number;
     raw_acx: number;
     raw_acy: number;
     raw_acz: number;
-    raw_gcx: number;
-    raw_gcy: number;
-    raw_gcz: number;
+    raw_gyx: number;
+    raw_gyy: number;
+    raw_gyz: number;
+    baseline_acx: number;
+    baseline_acy: number;
+    baseline_acz: number;
+    baseline_gyx: number;
+    baseline_gyy: number;
+    baseline_gyz: number;
   } = req.body;
 
   logger.info(
     `Sensor Data Received | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`
   );
 
-  // // Try different scale factors to diagnose
-  // const scaleFactor = 16384.0; // ±2g range
-  // // const scaleFactor = 8192.0;  // ±4g range (uncomment to test)
-  // // const scaleFactor = 4096.0;  // ±8g range (uncomment to test)
-  // // const scaleFactor = 2048.0;  // ±16g range (uncomment to test)
+  // Try different scale factors to diagnose
+  const scaleFactor = 16384.0; // ±2g range
+  // const scaleFactor = 8192.0;  // ±4g range (uncomment to test)
+  // const scaleFactor = 4096.0;  // ±8g range (uncomment to test)
+  // const scaleFactor = 2048.0;  // ±16g range (uncomment to test)
 
-  // const ax_g = data.raw_acx / scaleFactor;
-  // const ay_g = data.raw_acy / scaleFactor;
-  // const az_g = data.raw_acz / scaleFactor;
+  const ax_g = data.raw_acx / scaleFactor;
+  const ay_g = data.raw_acy / scaleFactor;
+  const az_g = data.raw_acz / scaleFactor;
+  const baseline_ax_g = data.baseline_acx / scaleFactor;
+  const baseline_ay_g = data.baseline_acy / scaleFactor;
+  const baseline_az_g = data.baseline_acz / scaleFactor;
 
-  // const mag = Math.abs(Math.sqrt(ax_g * ax_g + ay_g * ay_g + az_g * az_g) - 1);
+  const mag = Math.abs(Math.sqrt(ax_g * ax_g + ay_g * ay_g + az_g * az_g) - 1);
 
-  // // Initialize sensor history if needed
-  // if (motionHistory[data.sensor_id] === undefined) {
-  //   const newHistory = {
-  //     queue: new Queue<number>(detectionPeriod),
-  //     occupied: false,
-  //     baseline_ax: ax_g, // Set initial baseline
-  //     baseline_ay: ay_g,
-  //     baseline_az: az_g,
-  //   };
-  //   motionHistory[data.sensor_id] = newHistory;
-  // }
+  // Initialize sensor history if needed
+  if (motionHistory[data.sensor_id] === undefined) {
+    const newHistory = {
+      queue: new Queue<number>(detectionPeriod),
+      occupied: false,
+    };
+    motionHistory[data.sensor_id] = newHistory;
+  }
 
-  // // Calculate vibration as deviation from baseline (better for tilted sensors)
-  // const dx = ax_g - (motionHistory[data.sensor_id].baseline_ax || ax_g);
-  // const dy = ay_g - (motionHistory[data.sensor_id].baseline_ay || ay_g);
-  // const dz = az_g - (motionHistory[data.sensor_id].baseline_az || az_g);
+  // Calculate vibration as deviation from baseline (better for tilted sensors)
+  const dx = ax_g - (baseline_ax_g || ax_g);
+  const dy = ay_g - (baseline_ay_g || ay_g);
+  const dz = az_g - (baseline_az_g || az_g);
 
-  // // Vibration is the magnitude of change from baseline
-  // const vibration = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  // Vibration is the magnitude of change from baseline
+  const vibration = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-  // motionHistory[data.sensor_id].queue.enqueue(vibration);
-  // const rms = Math.sqrt(
-  //   motionHistory[data.sensor_id].queue
-  //     .toArray()
-  //     .reduce((sum, val) => sum + val * val, 0) /
-  //     motionHistory[data.sensor_id].queue.size()
-  // );
+  motionHistory[data.sensor_id].queue.enqueue(vibration);
+  const rms = calculateRMS(motionHistory[data.sensor_id].queue.toArray());
 
   // // Diagnostic logging
   // logger.info(
   //   `Mag: ${mag.toFixed(4)}g | Vibration: ${vibration.toFixed(
   //     5
   //   )}g | RMS: ${rms.toFixed(5)}g | ` +
-  //     `Raw: [${data.raw_acx}, ${data.raw_acy}, ${data.raw_acz}]`
+  //     `Normalised: [${dx}, ${dy}, ${dz}] ` +
+  //     `Raw: [${data.raw_acx}, ${data.raw_acy}, ${data.raw_acz}] ` +
+  //     `Baseline: [${data.baseline_acx}, ${data.baseline_acy}, ${data.baseline_acz}] `
   // );
-  // return;
-  // Check if motion detected
-  const motionDetected =
-    data.delta_acx > ACCEL_THRESHOLD ||
-    data.delta_acy > ACCEL_THRESHOLD ||
-    data.delta_acz > ACCEL_THRESHOLD ||
-    data.delta_gcx > GYRO_THRESHOLD ||
-    data.delta_gcy > GYRO_THRESHOLD ||
-    data.delta_gcz > GYRO_THRESHOLD;
 
-  if (motionHistory[data.sensor_id] === undefined) {
-    const newHistory = {
-      queue: new Queue<boolean>(detectionPeriod),
-      occupied: false,
-    };
-    motionHistory[data.sensor_id] = newHistory;
-  }
-  motionHistory[data.sensor_id].queue.enqueue(motionDetected);
-
-  let motionCount = 0;
-  motionHistory[data.sensor_id].queue.toArray().forEach((isOccupied) => {
-    if (isOccupied) {
-      motionCount++;
-    }
-  });
-
-  const motionPercent = (motionCount * 100) / 50;
-  const stationaryPercent = 100 - motionPercent;
+  const RMS_THRESHOLD_OCCUPIED = 0.02; // 20mg sustained vibration
+  const RMS_THRESHOLD_FREE = 0.01; // 10mg hysteresis
 
   const oldOccupiedStatus = motionHistory[data.sensor_id].occupied;
-  if (motionPercent > MOTION_THRESHOLD_PERCENT) {
+  if (rms > RMS_THRESHOLD_OCCUPIED) {
     motionHistory[data.sensor_id].occupied = true; // Change to motion
-  } else if (stationaryPercent > MOTION_THRESHOLD_PERCENT) {
+  } else if (rms < RMS_THRESHOLD_FREE) {
     motionHistory[data.sensor_id].occupied = false; // Change to stationary
   }
 
   let string = ``;
   Object.keys(motionHistory).forEach((key) => {
-    let count = 0;
-    motionHistory[key].queue.toArray().forEach((isOccupied) => {
-      if (isOccupied) {
-        count++;
-      }
-    });
-    string += `${key}: [${count}/${detectionPeriod}]\n`;
+    const rms = calculateRMS(motionHistory[key].queue.toArray());
+    string += `${key}: [ Raw: ${motionHistory[key].queue
+      .toArray()
+      .at(-1)
+      .toFixed(5)} RMS (5dp): ${rms.toFixed(
+      5
+    )} RTO: ${RMS_THRESHOLD_OCCUPIED} RTF: ${RMS_THRESHOLD_FREE} ]\n`;
   });
   logger.info(string);
+
   await poolClient.query(
     `INSERT INTO sensor_data (
           sensor_id, event_id,
-          raw_acx, raw_acy, raw_acz, raw_gcx, raw_gcy, raw_gcz,
-          delta_acx, delta_acy, delta_acz, delta_gcx, delta_gcy, delta_gcz
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+          raw_acx, raw_acy, raw_acz, raw_gyx, raw_gyy, raw_gyz,
+          delta_acx, delta_acy, delta_acz, delta_gyx, delta_gyy, delta_gyz,
+          baseline_acx, baseline_acy, baseline_acz, baseline_gyx, baseline_gyy, baseline_gyz
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
     [
       data.sensor_id,
       data.event_id,
       data.raw_acx,
       data.raw_acy,
       data.raw_acz,
-      data.raw_gcx,
-      data.raw_gcy,
-      data.raw_gcz,
+      data.raw_gyx,
+      data.raw_gyy,
+      data.raw_gyz,
       data.delta_acx,
       data.delta_acy,
       data.delta_acz,
-      data.delta_gcx,
-      data.delta_gcy,
-      data.delta_gcz,
+      data.delta_gyx,
+      data.delta_gyy,
+      data.delta_gyz,
+      data.baseline_acx,
+      data.baseline_acy,
+      data.baseline_acz,
+      data.baseline_gyx,
+      data.baseline_gyy,
+      data.baseline_gyz,
     ]
   );
 
@@ -207,18 +190,119 @@ app.post("/submit", async (req, res) => {
     await poolClient.query(
       `INSERT INTO motion_detection (
             sensor_id, occupied_status, detection_period,
-            accel_threshold, gyro_threshold, motion_threshold_percent
+            rms, rms_threshold_free, rms_threshold_occupied
           ) VALUES ($1, $2, $3, $4, $5, $6)`,
       [
         data.sensor_id,
         motionHistory[data.sensor_id].occupied,
         detectionPeriod,
-        ACCEL_THRESHOLD,
-        GYRO_THRESHOLD,
-        MOTION_THRESHOLD_PERCENT,
+        rms,
+        RMS_THRESHOLD_FREE,
+        RMS_THRESHOLD_OCCUPIED,
       ]
     );
   }
-});
 
+  return;
+  // Check if motion detected
+  // const motionDetected =
+  //   data.delta_acx > ACCEL_THRESHOLD ||
+  //   data.delta_acy > ACCEL_THRESHOLD ||
+  //   data.delta_acz > ACCEL_THRESHOLD ||
+  //   data.delta_gyx > GYRO_THRESHOLD ||
+  //   data.delta_gyy > GYRO_THRESHOLD ||
+  //   data.delta_gyz > GYRO_THRESHOLD;
+
+  // if (motionHistory[data.sensor_id] === undefined) {
+  //   const newHistory = {
+  //     queue: new Queue<boolean>(detectionPeriod),
+  //     occupied: false,
+  //   };
+  //   motionHistory[data.sensor_id] = newHistory;
+  // }
+  // motionHistory[data.sensor_id].queue.enqueue(motionDetected);
+
+  // let motionCount = 0;
+  // motionHistory[data.sensor_id].queue.toArray().forEach((isOccupied) => {
+  //   if (isOccupied) {
+  //     motionCount++;
+  //   }
+  // });
+
+  // const motionPercent = (motionCount * 100) / 50;
+  // const stationaryPercent = 100 - motionPercent;
+
+  // const oldOccupiedStatus = motionHistory[data.sensor_id].occupied;
+  // if (motionPercent > MOTION_THRESHOLD_PERCENT) {
+  //   motionHistory[data.sensor_id].occupied = true; // Change to motion
+  // } else if (stationaryPercent > MOTION_THRESHOLD_PERCENT) {
+  //   motionHistory[data.sensor_id].occupied = false; // Change to stationary
+  // }
+
+  // let string = ``;
+  // Object.keys(motionHistory).forEach((key) => {
+  //   let count = 0;
+  //   motionHistory[key].queue.toArray().forEach((isOccupied) => {
+  //     if (isOccupied) {
+  //       count++;
+  //     }
+  //   });
+  //   string += `${key}: [${count}/${detectionPeriod}]\n`;
+  // });
+  // logger.info(string);
+  // await poolClient.query(
+  //   `INSERT INTO sensor_data (
+  //         sensor_id, event_id,
+  //         raw_acx, raw_acy, raw_acz, raw_gyx, raw_gyy, raw_gyz,
+  //         delta_acx, delta_acy, delta_acz, delta_gyx, delta_gyy, delta_gyz,
+  //         baseline_acx, baseline_acy, baseline_acz, baseline_gyx, baseline_gyy, baseline_gyz
+  //       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)`,
+  //   [
+  //     data.sensor_id,
+  //     data.event_id,
+  //     data.raw_acx,
+  //     data.raw_acy,
+  //     data.raw_acz,
+  //     data.raw_gyx,
+  //     data.raw_gyy,
+  //     data.raw_gyz,
+  //     data.delta_acx,
+  //     data.delta_acy,
+  //     data.delta_acz,
+  //     data.delta_gyx,
+  //     data.delta_gyy,
+  //     data.delta_gyz,
+  //     data.baseline_acx,
+  //     data.baseline_acy,
+  //     data.baseline_acz,
+  //     data.baseline_gyx,
+  //     data.baseline_gyy,
+  //     data.baseline_gyz,
+  //   ]
+  // );
+
+  // // Save motion detection status only on status change
+  // if (motionHistory[data.sensor_id].occupied !== oldOccupiedStatus) {
+  //   logger.info(
+  //     `Status Change | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`
+  //   );
+  //   await poolClient.query(
+  //     `INSERT INTO motion_detection (
+  //           sensor_id, occupied_status, detection_period,
+  //           accel_threshold, gyro_threshold, motion_threshold_percent
+  //         ) VALUES ($1, $2, $3, $4, $5, $6)`,
+  //     [
+  //       data.sensor_id,
+  //       motionHistory[data.sensor_id].occupied,
+  //       detectionPeriod,
+  //       ACCEL_THRESHOLD,
+  //       GYRO_THRESHOLD,
+  //       MOTION_THRESHOLD_PERCENT,
+  //     ]
+  //   );
+  // }
+});
+function calculateRMS(arr: number[]) {
+  return Math.sqrt(arr.reduce((sum, val) => sum + val * val, 0) / arr.length);
+}
 init();

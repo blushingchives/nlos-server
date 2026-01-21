@@ -55,11 +55,7 @@ async function initiate() {
           'id', NEW.id,
           'sensor_id', NEW.sensor_id,
           'timestamp', NEW.timestamp,
-          'occupied_status', NEW.occupied_status,
-          'detection_period', NEW.detection_period,
-          'accel_threshold', NEW.accel_threshold,
-          'gyro_threshold', NEW.gyro_threshold,
-          'motion_threshold_percent', NEW.motion_threshold_percent
+          'occupied_status', NEW.occupied_status
         );
 
         -- Send notification on the 'motion_detection_changes' channel

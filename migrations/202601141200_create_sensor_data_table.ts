@@ -14,15 +14,21 @@ CREATE TABLE sensor_data (
     raw_acx INTEGER NOT NULL,
     raw_acy INTEGER NOT NULL,
     raw_acz INTEGER NOT NULL,
-    raw_gcx INTEGER NOT NULL,
-    raw_gcy INTEGER NOT NULL,
-    raw_gcz INTEGER NOT NULL,
+    raw_gyx INTEGER NOT NULL,
+    raw_gyy INTEGER NOT NULL,
+    raw_gyz INTEGER NOT NULL,
     delta_acx INTEGER NOT NULL,
     delta_acy INTEGER NOT NULL,
     delta_acz INTEGER NOT NULL,
-    delta_gcx INTEGER NOT NULL,
-    delta_gcy INTEGER NOT NULL,
-    delta_gcz INTEGER NOT NULL
+    delta_gyx INTEGER NOT NULL,
+    delta_gyy INTEGER NOT NULL,
+    delta_gyz INTEGER NOT NULL,
+    baseline_acx INTEGER NOT NULL,
+    baseline_acy INTEGER NOT NULL,
+    baseline_acz INTEGER NOT NULL,
+    baseline_gyx INTEGER NOT NULL,
+    baseline_gyy INTEGER NOT NULL,
+    baseline_gyz INTEGER NOT NULL
 );
 CREATE TABLE motion_detection (
     id SERIAL PRIMARY KEY,
@@ -30,9 +36,9 @@ CREATE TABLE motion_detection (
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     occupied_status BOOLEAN NOT NULL,
     detection_period INTEGER NOT NULL,
-    accel_threshold INTEGER NOT NULL,
-    gyro_threshold INTEGER NOT NULL,
-    motion_threshold_percent INTEGER NOT NULL
+    rms DECIMAL NOT NULL,
+    rms_threshold_free DECIMAL NOT NULL,
+    rms_threshold_occupied DECIMAL NOT NULL
 );
         `),
   ]);

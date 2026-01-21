@@ -7,15 +7,21 @@ export type SensorData = {
   raw_acx: number;
   raw_acy: number;
   raw_acz: number;
-  raw_gcx: number;
-  raw_gcy: number;
-  raw_gcz: number;
+  raw_gyx: number;
+  raw_gyy: number;
+  raw_gyz: number;
   delta_acx: number;
   delta_acy: number;
   delta_acz: number;
-  delta_gcx: number;
-  delta_gcy: number;
-  delta_gcz: number;
+  delta_gyx: number;
+  delta_gyy: number;
+  delta_gyz: number;
+  baseline_acx: number;
+  baseline_acy: number;
+  baseline_acz: number;
+  baseline_gyx: number;
+  baseline_gyy: number;
+  baseline_gyz: number;
 };
 
 export type SensorDataInsert = Omit<SensorData, "id" | "timestamp">;
@@ -26,9 +32,9 @@ export type MotionDetection = {
   timestamp: Date;
   occupied_status: boolean;
   detection_period: number;
-  accel_threshold: number;
-  gyro_threshold: number;
-  motion_threshold_percent: number;
+  rms: number;
+  rms_threshold_free: number;
+  rms_thresholds_occupied: number;
 };
 
 export type MotionDetectionInsert = Omit<MotionDetection, "id" | "timestamp">;
