@@ -62,7 +62,7 @@ async function start() {
 }
 
 export async function sendUpdate() {
-  const sensorData: MotionDetection[] = (
+  const motionData: MotionDetection[] = (
     await poolClient.query(
       `
     SELECT DISTINCT ON (sensor_id) *
@@ -72,8 +72,12 @@ export async function sendUpdate() {
     )
   ).rows;
 
-  let string = `NUS Laundry Occupancy System - NLOS\n`;
-  sensorData.forEach((data) => {
+  if (motionData.length === 0) {
+    return;
+  }
+
+  let string = ``;
+  motionData.forEach((data) => {
     string += `${data.sensor_id}: ${
       data.occupied_status ? "Occupied" : "Free\n"
     }`;
