@@ -4,7 +4,7 @@ import pino from "pino";
 import { CreateLoggerClient } from "./tools/CreateLoggerClient";
 import { CreateDatabaseClient } from "./tools/CreateDatabaseClient";
 import { MotionDetection, SensorData } from "./types/database";
-import { sendUpdate } from "./periodic";
+import { sendUpdate } from "./sendUpdate";
 const agent = new https.Agent({ family: 4 }); // forces IPv4
 
 require("dotenv").config();
