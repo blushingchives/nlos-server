@@ -16,15 +16,28 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_API_KEY}`;
 const logger = CreateLoggerClient();
 
 let hasInitialized = false;
+let poolClient: any;
+let reconnectAttempts = 0;
 
 async function initiate() {
-  if (hasInitialized) {
+  if (hasInitialized && poolClient) {
     logger.info("⚠️  Already initialized, skipping...");
     return;
   }
   hasInitialized = true;
-  const poolClient = await CreateDatabaseClient(DATABASE_CONNECTION_STRING);
 
+  try {
+    poolClient = await CreateDatabaseClient(DATABASE_CONNECTION_STRING);
+    reconnectAttempts = 0; // Reset on successful connection
+    await setupListener();
+    setupHealthChecks();
+  } catch (error) {
+    logger.error("Failed to initialize:", error);
+    handleReconnect();
+  }
+}
+
+async function setupListener() {
   // Unlisten first to remove any stale listeners
   try {
     await poolClient.query("UNLISTEN motion_detection_changes");
@@ -83,7 +96,7 @@ async function initiate() {
   );
 
   // Set up notification handler
-  poolClient.on("notification", async (msg) => {
+  poolClient.on("notification", async (msg: any) => {
     if (msg.channel === "motion_detection_changes") {
       try {
         const payload: MotionDetection = JSON.parse(msg.payload || "{}");
@@ -100,5 +113,74 @@ async function initiate() {
       }
     }
   });
+
+  // Monitor connection errors
+  poolClient.on("error", (err: Error) => {
+    logger.error("PostgreSQL client error:", err);
+    handleReconnect();
+  });
+
+  poolClient.on("end", () => {
+    logger.warn("PostgreSQL connection ended unexpectedly");
+    handleReconnect();
+  });
 }
+
+function setupHealthChecks() {
+  // Keepalive: Send a simple query every 30 seconds
+  setInterval(async () => {
+    try {
+      if (!poolClient) return;
+      await poolClient.query("SELECT 1");
+      logger.debug("✓ Keepalive: Connection healthy");
+    } catch (error) {
+      logger.error("✗ Keepalive failed:", error);
+      handleReconnect();
+    }
+  }, 30000);
+
+  // Verify LISTEN status every minute
+  setInterval(async () => {
+    try {
+      if (!poolClient) return;
+
+      const result = await poolClient.query(`
+        SELECT COUNT(*)
+        FROM pg_listening_channels()
+        WHERE channel = 'motion_detection_changes'
+      `);
+
+      if (result.rows[0].count === "0") {
+        logger.warn(
+          "⚠️  Not listening to motion_detection_changes! Re-subscribing..."
+        );
+        await poolClient.query("LISTEN motion_detection_changes");
+        logger.info("✓ Re-subscribed to motion_detection_changes");
+      } else {
+        logger.debug("✓ LISTEN status verified");
+      }
+    } catch (error) {
+      logger.error("Failed to verify LISTEN status:", error);
+      handleReconnect();
+    }
+  }, 60000);
+}
+
+async function handleReconnect() {
+  reconnectAttempts++;
+  const backoffTime = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000); // Exponential backoff, max 30s
+
+  logger.info(
+    `Attempting to reconnect in ${
+      backoffTime / 1000
+    }s (attempt ${reconnectAttempts})...`
+  );
+
+  setTimeout(async () => {
+    hasInitialized = false;
+    poolClient = null;
+    await initiate();
+  }, backoffTime);
+}
+
 initiate();
