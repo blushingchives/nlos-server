@@ -136,7 +136,8 @@ app.post("/submit", async (req, res) => {
 
   // Vibration is the magnitude of change from baseline
   let rawVibration = Math.sqrt(dx * dx + dy * dy + dz * dz);
-  let vibration = Math.min(rawVibration, 0.1);
+  // let vibration = Math.min(rawVibration, 0.1);
+  let vibration = rawVibration;
   // Outlier rejection: cap extreme spikes based on recent history
   // const recentValues = motionHistory[data.sensor_id].queue.toArray();
   // if (recentValues.length >= MIN_SAMPLES_FOR_OUTLIER_DETECTION) {
