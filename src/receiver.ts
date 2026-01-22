@@ -7,6 +7,7 @@ import pino from "pino";
 import { CreateDatabaseClient } from "./tools/CreateDatabaseClient";
 import { CreateLoggerClient } from "./tools/CreateLoggerClient";
 import { Queue } from "./tools/Queue";
+import { sendUpdate } from "./sendUpdate";
 
 const agent = new https.Agent({ family: 4 }); // forces IPv4
 
@@ -17,6 +18,7 @@ require("dotenv").config();
 const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
 const SERVER_URL = process.env.SERVER_URL;
 const DATABASE_CONNECTION_STRING = process.env.DATABASE_CONNECTION_STRING;
+const TELEGRAM_GROUP_ID = process.env.TELEGRAM_GROUP_ID;
 
 // Motion detection thresholds
 const ACCEL_THRESHOLD = 150; // Accelerometer change threshold
@@ -238,6 +240,8 @@ app.post("/submit", async (req, res) => {
         RMS_THRESHOLD_OCCUPIED,
       ]
     );
+
+    sendUpdate(poolClient, TELEGRAM_GROUP_ID, TELEGRAM_API);
   }
 
   return;

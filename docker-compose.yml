@@ -16,16 +16,6 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-  instant:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        BUILD_TARGET: src/instant.ts
-        RUN_TARGET: dist/instant.js
-    restart: unless-stopped
-    env_file:
-      - .env
   periodic:
     build:
       context: .
