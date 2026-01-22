@@ -58,6 +58,6 @@ async function start() {
     );
 
     await new Promise((resolve) => setTimeout(resolve, waitTime));
-    await sendUpdate();
+    await sendUpdate(poolClient, TELEGRAM_GROUP_ID, TELEGRAM_API);
   }
 }

@@ -1,23 +1,17 @@
-import { Pool, PoolClient } from "pg";
+import { PoolClient } from "pg";
 import axios from "axios";
 import https from "https";
-import pino from "pino";
 import { CreateLoggerClient } from "./tools/CreateLoggerClient";
-import { CreateDatabaseClient } from "./tools/CreateDatabaseClient";
-import { MotionDetection, SensorData } from "./types/database";
+import { MotionDetection } from "./types/database";
 const agent = new https.Agent({ family: 4 }); // forces IPv4
 
 const logger = CreateLoggerClient();
 
-require("dotenv").config();
-const DATABASE_CONNECTION_STRING = process.env.DATABASE_CONNECTION_STRING;
-const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
-const TELEGRAM_GROUP_ID = process.env.TELEGRAM_GROUP_ID;
-const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_API_KEY}`;
-
-var poolClient: PoolClient;
-
-export async function sendUpdate() {
+export async function sendUpdate(
+  poolClient: PoolClient,
+  TELEGRAM_GROUP_ID: string,
+  TELEGRAM_API: string
+) {
   const motionData: MotionDetection[] = (
     await poolClient.query(
       `

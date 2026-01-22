@@ -94,7 +94,7 @@ async function initiate() {
         logger.info("Sending update...");
         logger.info("==============================");
 
-        sendUpdate();
+        sendUpdate(poolClient, TELEGRAM_GROUP_ID, TELEGRAM_API);
       } catch (error) {
         console.error("Error parsing notification payload:", error);
       }
