@@ -116,22 +116,22 @@ app.post("/submit", async (req, res) => {
   const dz = az_g - (baseline_az_g || az_g);
 
   // Vibration is the magnitude of change from baseline
-  let vibration = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
+  let rawVibration = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  let vibration = Math.min(rawVibration, 0.1);
   // Outlier rejection: cap extreme spikes based on recent history
-  const recentValues = motionHistory[data.sensor_id].queue.toArray();
-  if (recentValues.length >= MIN_SAMPLES_FOR_OUTLIER_DETECTION) {
-    const mean =
-      recentValues.reduce((sum, v) => sum + v, 0) / recentValues.length;
-    const variance =
-      recentValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) /
-      recentValues.length;
-    const stdDev = Math.sqrt(variance);
+  // const recentValues = motionHistory[data.sensor_id].queue.toArray();
+  // if (recentValues.length >= MIN_SAMPLES_FOR_OUTLIER_DETECTION) {
+  //   const mean =
+  //     recentValues.reduce((sum, v) => sum + v, 0) / recentValues.length;
+  //   const variance =
+  //     recentValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) /
+  //     recentValues.length;
+  //   const stdDev = Math.sqrt(variance);
 
-    // Cap vibration at mean + 3σ to reject extreme outliers
-    const maxAllowed = mean + OUTLIER_SIGMA_MULTIPLIER * stdDev;
-    vibration = Math.min(vibration, maxAllowed);
-  }
+  //   // Cap vibration at mean + 3σ to reject extreme outliers
+  //   const maxAllowed = mean + OUTLIER_SIGMA_MULTIPLIER * stdDev;
+  //   vibration = Math.min(vibration, maxAllowed);
+  // }
 
   motionHistory[data.sensor_id].queue.enqueue(vibration);
   const rms = calculateRMS(motionHistory[data.sensor_id].queue.toArray());
