@@ -46,12 +46,14 @@ app.get("/", (_, res) => {
 
 type MotionHistory = {
   [key: string]: {
-    queue: Queue<any>;
+    queue: Queue<number>;
     occupied: boolean;
   };
 };
 const motionHistory: MotionHistory = {};
 const detectionPeriod = 50;
+const MIN_SAMPLES_FOR_OUTLIER_DETECTION = 10; // Need baseline data before filtering
+const OUTLIER_SIGMA_MULTIPLIER = 3; // Cap values beyond 3 standard deviations
 const MOTION_THRESHOLD_PERCENT = 66; // 66% threshold for status change
 
 app.post("/submit", async (req, res) => {
@@ -114,7 +116,22 @@ app.post("/submit", async (req, res) => {
   const dz = az_g - (baseline_az_g || az_g);
 
   // Vibration is the magnitude of change from baseline
-  const vibration = Math.sqrt(dx * dx + dy * dy + dz * dz);
+  let vibration = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+  // Outlier rejection: cap extreme spikes based on recent history
+  const recentValues = motionHistory[data.sensor_id].queue.toArray();
+  if (recentValues.length >= MIN_SAMPLES_FOR_OUTLIER_DETECTION) {
+    const mean =
+      recentValues.reduce((sum, v) => sum + v, 0) / recentValues.length;
+    const variance =
+      recentValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) /
+      recentValues.length;
+    const stdDev = Math.sqrt(variance);
+
+    // Cap vibration at mean + 3σ to reject extreme outliers
+    const maxAllowed = mean + OUTLIER_SIGMA_MULTIPLIER * stdDev;
+    vibration = Math.min(vibration, maxAllowed);
+  }
 
   motionHistory[data.sensor_id].queue.enqueue(vibration);
   const rms = calculateRMS(motionHistory[data.sensor_id].queue.toArray());
@@ -133,11 +150,14 @@ app.post("/submit", async (req, res) => {
   const RMS_THRESHOLD_FREE = 0.01; // 10mg hysteresis
 
   const oldOccupiedStatus = motionHistory[data.sensor_id].occupied;
+
+  // Simple hysteresis-based detection
   if (rms > RMS_THRESHOLD_OCCUPIED) {
-    motionHistory[data.sensor_id].occupied = true; // Change to motion
+    motionHistory[data.sensor_id].occupied = true;
   } else if (rms < RMS_THRESHOLD_FREE) {
-    motionHistory[data.sensor_id].occupied = false; // Change to stationary
+    motionHistory[data.sensor_id].occupied = false;
   }
+  // else: in hysteresis zone, keep current state
 
   let string = ``;
   Object.keys(motionHistory).forEach((key) => {
@@ -145,7 +165,7 @@ app.post("/submit", async (req, res) => {
     string += `${key}: [ Raw: ${motionHistory[key].queue
       .toArray()
       .at(-1)
-      .toFixed(5)} RMS (5dp): ${rms.toFixed(
+      ?.toFixed(5)} RMS (5dp): ${rms.toFixed(
       5
     )} RTO: ${RMS_THRESHOLD_OCCUPIED} RTF: ${RMS_THRESHOLD_FREE} ]\n`;
   });
