@@ -53,8 +53,25 @@ type MotionHistory = {
 const motionHistory: MotionHistory = {};
 const detectionPeriod = 50;
 const MIN_SAMPLES_FOR_OUTLIER_DETECTION = 10; // Need baseline data before filtering
-const OUTLIER_SIGMA_MULTIPLIER = 3; // Cap values beyond 3 standard deviations
+const OUTLIER_SIGMA_MULTIPLIER = 5; // Cap values beyond 3 standard deviations
 const MOTION_THRESHOLD_PERCENT = 66; // 66% threshold for status change
+
+app.post("/flush", async (req, res) => {
+  res.send({ success: true });
+
+  const data: {
+    sensor_id: string;
+    event_id: string;
+  } = req.body;
+
+  logger.info(
+    `FLush Data Received | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`
+  );
+
+  if (motionHistory[data.sensor_id] !== undefined) {
+    motionHistory[data.sensor_id].queue = new Queue<number>(detectionPeriod);
+  }
+});
 
 app.post("/submit", async (req, res) => {
   res.send({ success: true });
