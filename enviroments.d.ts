@@ -4,6 +4,8 @@ declare global {
       TELEGRAM_API_KEY;
       DATABASE_CONNECTION_STRING;
       TELEGRAM_GROUP_ID;
+      TELEGRAM_THREAD_ID_PGPR;
+      TELEGRAM_THREAD_ID_PULSE;
     }
   }
 }

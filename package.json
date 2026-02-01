@@ -6,7 +6,7 @@
   "scripts": {
     "receiver": "ts-node-dev src/receiver.ts",
     "periodic": "ts-node-dev src/periodic.ts",
-    "instant": "ts-node-dev src/instant.ts",
+    "pulse": "ts-node-dev src/pulse.ts",
     "start:prod": "node dist/app.ts",
     "build:prod": "tsup $BUILD_TARGET --out-dir dist --clean --minify",
     "lint": "eslint . --ext .ts",

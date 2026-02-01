@@ -26,3 +26,13 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+  pulse:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_TARGET: src/pulse.ts
+        RUN_TARGET: dist/pulse.js
+    restart: unless-stopped
+    env_file:
+      - .env

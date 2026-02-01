@@ -19,6 +19,7 @@ const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
 const SERVER_URL = process.env.SERVER_URL;
 const DATABASE_CONNECTION_STRING = process.env.DATABASE_CONNECTION_STRING;
 const TELEGRAM_GROUP_ID = process.env.TELEGRAM_GROUP_ID;
+const TELEGRAM_THREAD_ID = process.env.TELEGRAM_THREAD_ID_PGPR;
 
 // Motion detection thresholds
 const ACCEL_THRESHOLD = 150; // Accelerometer change threshold
@@ -67,7 +68,7 @@ app.post("/flush", async (req, res) => {
   } = req.body;
 
   logger.info(
-    `FLush Data Received | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`
+    `FLush Data Received | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`,
   );
 
   if (motionHistory[data.sensor_id] !== undefined) {
@@ -102,7 +103,7 @@ app.post("/submit", async (req, res) => {
   } = req.body;
 
   logger.info(
-    `Sensor Data Received | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`
+    `Sensor Data Received | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`,
   );
 
   // Try different scale factors to diagnose
@@ -187,7 +188,7 @@ app.post("/submit", async (req, res) => {
       .toArray()
       .at(-1)
       ?.toFixed(5)} RMS (5dp): ${rms.toFixed(
-      5
+      5,
     )} RTO: ${RMS_THRESHOLD_OCCUPIED} RTF: ${RMS_THRESHOLD_FREE} ]\n`;
   });
   logger.info(string);
@@ -220,13 +221,13 @@ app.post("/submit", async (req, res) => {
       data.baseline_gyx,
       data.baseline_gyy,
       data.baseline_gyz,
-    ]
+    ],
   );
 
   // Save motion detection status only on status change
   if (motionHistory[data.sensor_id].occupied !== oldOccupiedStatus) {
     logger.info(
-      `Status Change | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`
+      `Status Change | Sensor Id: ${data.sensor_id} | Event Id: ${data.event_id}`,
     );
     await poolClient.query(
       `INSERT INTO motion_detection (
@@ -240,10 +241,10 @@ app.post("/submit", async (req, res) => {
         rms,
         RMS_THRESHOLD_FREE,
         RMS_THRESHOLD_OCCUPIED,
-      ]
+      ],
     );
 
-    sendUpdate(poolClient, TELEGRAM_GROUP_ID, TELEGRAM_API);
+    sendUpdate(poolClient, TELEGRAM_GROUP_ID, TELEGRAM_THREAD_ID, TELEGRAM_API);
   }
 
   return;

@@ -10,7 +10,8 @@ const logger = CreateLoggerClient();
 export async function sendUpdate(
   poolClient: PoolClient,
   TELEGRAM_GROUP_ID: string,
-  TELEGRAM_API: string
+  TELEGRAM_THREAD_ID: string,
+  TELEGRAM_API: string,
 ) {
   const motionData: MotionDetection[] = (
     await poolClient.query(
@@ -18,7 +19,7 @@ export async function sendUpdate(
     SELECT DISTINCT ON (sensor_id) *
     FROM motion_detection
     ORDER BY sensor_id, timestamp DESC;
-        `
+        `,
     )
   ).rows;
 
@@ -39,10 +40,11 @@ export async function sendUpdate(
       {
         parse_mode: "markdown",
         chat_id: TELEGRAM_GROUP_ID,
+        message_thread_id: TELEGRAM_THREAD_ID,
         disable_web_page_preview: true,
         text: string,
       },
-      { httpsAgent: agent }
+      { httpsAgent: agent },
     )
     .catch((e) => logger.info(e));
 

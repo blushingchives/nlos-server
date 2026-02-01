@@ -1,11 +1,9 @@
-import { Pool, PoolClient } from "pg";
-import axios from "axios";
+import { PoolClient } from "pg";
 import https from "https";
-import pino from "pino";
 import { CreateLoggerClient } from "./tools/CreateLoggerClient";
 import { CreateDatabaseClient } from "./tools/CreateDatabaseClient";
-import { MotionDetection, SensorData } from "./types/database";
 import { sendUpdate } from "./sendUpdate";
+import { sendPulse } from "./sendPulse";
 const agent = new https.Agent({ family: 4 }); // forces IPv4
 
 const logger = CreateLoggerClient();
@@ -14,7 +12,7 @@ require("dotenv").config();
 const DATABASE_CONNECTION_STRING = process.env.DATABASE_CONNECTION_STRING;
 const TELEGRAM_API_KEY = process.env.TELEGRAM_API_KEY;
 const TELEGRAM_GROUP_ID = process.env.TELEGRAM_GROUP_ID;
-const TELEGRAM_THREAD_ID = process.env.TELEGRAM_THREAD_ID_PGPR;
+const TELEGRAM_THREAD_ID = process.env.TELEGRAM_THREAD_ID_PULSE;
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_API_KEY}`;
 
 var poolClient: PoolClient;
@@ -59,7 +57,7 @@ async function start() {
     );
 
     await new Promise((resolve) => setTimeout(resolve, waitTime));
-    await sendUpdate(
+    await sendPulse(
       poolClient,
       TELEGRAM_GROUP_ID,
       TELEGRAM_THREAD_ID,
