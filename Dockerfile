@@ -27,8 +27,11 @@ WORKDIR /app
 
 # Copy only necessary files from the builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package-lock.json ./
+
+# Install only production dependencies
+RUN npm ci --omit=dev
 
 # Set environment variables (optional)
 ENV NODE_ENV=production
