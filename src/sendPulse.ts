@@ -29,7 +29,7 @@ export async function sendPulse(
     return;
   }
 
-  let string = `===  NLOS  ===\n`;
+  let string = ``;
   motionData.forEach((data) => {
     const absoluteMsDiff = Math.abs(
       currentTime.getTime() - data.timestamp.getTime(),
