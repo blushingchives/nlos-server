@@ -45,7 +45,7 @@ export async function sendPulse(
     // Format as "DD-MM-YYYY HH:MM"
     const formattedDate = `${hours}:${minutes}, ${day}-${month}-${year}`;
 
-    string += `${data.sensor_id}: ${isLive ? "🟢" : "🔴"} \[${formattedDate}\]\n`;
+    string += `${data.sensor_id}: ${isLive ? "🟢" : "🔴"} \\[${formattedDate}\\]\n`;
   });
 
   await axios
