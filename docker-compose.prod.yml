@@ -1,5 +1,5 @@
 # Production docker-compose for server deployment
-# Usage: docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+# Usage: docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d && docker image prune -a -f
 
 name: arduino-1
 services:
