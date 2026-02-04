@@ -30,10 +30,11 @@ export async function sendUpdate(
   let string = `===  NLOS  ===\n`;
   motionData.forEach((data) => {
     string += `${data.sensor_id}: ${
-      data.occupied_status ? "Occupied" : "Free\n"
+      data.occupied_status ? "🔴 Occupied" : "🟢 Free\n"
     }`;
   });
-
+  string += `==============\n
+  `;
   await axios
     .post(
       `${TELEGRAM_API}/sendMessage`,
