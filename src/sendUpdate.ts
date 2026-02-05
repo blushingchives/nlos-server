@@ -41,7 +41,7 @@ export async function sendUpdate(
       {
         parse_mode: "markdown",
         chat_id: TELEGRAM_GROUP_ID,
-        message_thread_id: TELEGRAM_THREAD_ID,
+        // message_thread_id: TELEGRAM_THREAD_ID,
         disable_web_page_preview: true,
         text: string,
       },
