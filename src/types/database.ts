@@ -38,3 +38,9 @@ export type MotionDetection = {
 };
 
 export type MotionDetectionInsert = Omit<MotionDetection, "id" | "timestamp">;
+
+export type TelegramData = {
+  group_id: string;
+  thread_id: string;
+  message_id: string;
+};
