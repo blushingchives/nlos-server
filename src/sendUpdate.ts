@@ -67,7 +67,7 @@ export async function sendUpdate(
       {
         parse_mode: "markdown",
         chat_id: TELEGRAM_GROUP_ID,
-        thread_id: TELEGRAM_THREAD_ID,
+        message_thread_id: TELEGRAM_THREAD_ID,
         text: string,
       },
       { httpsAgent: agent },
