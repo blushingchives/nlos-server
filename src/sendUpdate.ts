@@ -48,19 +48,6 @@ export async function sendUpdate(
     )
   ).rows[0];
 
-  if (telegramData !== undefined) {
-    await axios
-      .post(
-        `${TELEGRAM_API}/deleteMessage`,
-        {
-          chat_id: TELEGRAM_GROUP_ID,
-          message_id: telegramData.message_id,
-        },
-        { httpsAgent: agent },
-      )
-      .catch((e) => logger.info(e));
-  }
-
   const response = await axios
     .post(
       `${TELEGRAM_API}/sendMessage`,
@@ -76,6 +63,19 @@ export async function sendUpdate(
       logger.info(e);
       return null;
     });
+
+  if (telegramData !== undefined) {
+    await axios
+      .post(
+        `${TELEGRAM_API}/deleteMessage`,
+        {
+          chat_id: TELEGRAM_GROUP_ID,
+          message_id: telegramData.message_id,
+        },
+        { httpsAgent: agent },
+      )
+      .catch((e) => logger.info(e));
+  }
 
   const newMessageId = response?.data?.result?.message_id;
   if (newMessageId) {
