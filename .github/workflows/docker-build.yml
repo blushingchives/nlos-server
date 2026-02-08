@@ -59,21 +59,3 @@ jobs:
           build-args: |
             BUILD_TARGET=${{ matrix.build_target }}
             RUN_TARGET=${{ matrix.run_target }}
-
-  cleanup:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    strategy:
-      matrix:
-        image: [nlos-server-receiver, nlos-server-periodic, nlos-server-pulse]
-    steps:
-      - name: Delete old images
-        uses: snok/container-retention-policy@v3.0.1
-        with:
-          account: ${{ github.repository_owner }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          image-names: ${{ matrix.image }}
-          cut-off: 1h
-          keep-n-most-recent: 20
